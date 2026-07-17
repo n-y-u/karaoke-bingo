@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>カラオケビンゴ</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#120a1e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="カラビンゴ">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+  :root{
+    --bg-deep:#120a1e;
+    --bg-panel:#1e1130;
+    --bg-panel-2:#291946;
+    --line:#3c2a5c;
+    --accent-pink:#ff2f8a;
+    --accent-cyan:#22e6c8;
+    --accent-gold:#ffcc4d;
+    --text-light:#f4eefc;
+    --text-dim:#a892c4;
+    --danger:#ff5470;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, rgba(255,47,138,0.25), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 90% 110%, rgba(34,230,200,0.18), transparent 60%),
+      var(--bg-deep);
+    color:var(--text-light);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 60px;
+  }
+  .screen{ width:100%; max-width:480px; display:none; flex-direction:column; align-items:center; }
+  .screen.active{ display:flex; }
+
+  /* ===== TOP ===== */
+  .logo-wrap{ text-align:center; margin:36px 0 44px; }
+  .logo-mic{ font-size:44px; filter:drop-shadow(0 0 12px rgba(255,47,138,0.6)); }
+  h1.title{
+    margin:8px 0 0;
+    font-size:34px;
+    font-weight:900;
+    letter-spacing:0.04em;
+    background:linear-gradient(90deg,var(--accent-pink),var(--accent-gold) 55%,var(--accent-cyan));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 30px rgba(255,47,138,0.25);
+  }
+  .subtitle{ margin-top:6px; font-size:12px; letter-spacing:0.3em; color:var(--text-dim); text-transform:uppercase; }
+
+  .menu-btn{
+    width:100%; padding:18px; margin-bottom:16px;
+    font-size:17px; font-weight:700; color:var(--text-light);
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:14px;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+    transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+  }
+  .menu-btn:active{ transform:scale(0.97); }
+  .menu-btn.primary{
+    background:linear-gradient(135deg,var(--accent-pink),#c21e6c);
+    border-color:transparent; box-shadow:0 8px 24px rgba(255,47,138,0.35);
+  }
+  .menu-btn.secondary:hover, .menu-btn.secondary:active{ border-color:var(--accent-cyan); }
+
+  .load-panel{
+    width:100%; margin-top:6px; padding:18px; background:var(--bg-panel);
+    border:1px solid var(--line); border-radius:14px; display:none;
+  }
+  .load-panel.active{ display:block; }
+  .load-panel label{ font-size:12px; color:var(--text-dim); letter-spacing:0.05em; }
+  textarea, input[type=text]{
+    width:100%; margin-top:8px; padding:12px; border-radius:10px;
+    background:var(--bg-deep); color:var(--text-light); border:1px solid var(--line);
+    font-size:14px; font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    resize:vertical;
+  }
+  textarea:focus, input:focus{ outline:none; border-color:var(--accent-cyan); }
+  .error-text{ color:var(--danger); font-size:13px; margin-top:8px; display:none; }
+  .error-text.active{ display:block; }
+
+  /* ===== MODE SELECT ===== */
+  .mode-card{
+    width:100%; padding:22px; margin-bottom:16px; border-radius:16px; text-align:left;
+    border:1px solid var(--line); cursor:pointer; color:var(--text-light);
+    -webkit-tap-highlight-color:transparent;
+    transition:transform .12s ease;
+  }
+  .mode-card:active{ transform:scale(0.98); }
+  .mode-card h3{ margin:0 0 6px; font-size:19px; font-weight:800; }
+  .mode-card p{ margin:0; font-size:13px; color:var(--text-dim); }
+  .mode-normal{ background:linear-gradient(135deg, var(--bg-panel-2), var(--bg-panel)); border-color:var(--accent-cyan); }
+  .mode-hard{ background:linear-gradient(135deg, var(--bg-panel-2), var(--bg-panel)); border-color:var(--accent-gold); }
+  .mode-hardcore{ background:linear-gradient(135deg, var(--bg-panel-2), var(--bg-panel)); border-color:var(--accent-pink); }
+  .mode-tag{ display:inline-block; font-size:11px; padding:3px 9px; border-radius:999px; margin-bottom:8px; letter-spacing:0.05em; }
+  .mode-normal .mode-tag{ background:rgba(34,230,200,0.15); color:var(--accent-cyan); }
+  .mode-hard .mode-tag{ background:rgba(255,204,77,0.15); color:var(--accent-gold); }
+  .mode-hardcore .mode-tag{ background:rgba(255,47,138,0.15); color:var(--accent-pink); }
+
+  .back-link{ margin-top:8px; color:var(--text-dim); font-size:14px; background:none; border:none; cursor:pointer; padding:10px; }
+
+  /* ===== MODAL ===== */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(8,4,14,0.72); backdrop-filter:blur(2px);
+    display:none; align-items:center; justify-content:center; z-index:50; padding:20px;
+  }
+  .modal-overlay.active{ display:flex; }
+  .modal-box{
+    width:100%; max-width:340px; background:var(--bg-panel-2); border:1px solid var(--line);
+    border-radius:18px; padding:26px 22px; text-align:center;
+  }
+  .modal-box h4{ margin:0 0 10px; font-size:18px; }
+  .modal-box p{ margin:0 0 22px; font-size:14px; color:var(--text-dim); line-height:1.6; white-space:pre-line; text-align:center; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-btn{ flex:1; padding:13px; border-radius:10px; font-size:15px; font-weight:700; border:none; cursor:pointer; }
+  .modal-btn.cancel{ background:transparent; border:1px solid var(--line); color:var(--text-dim); }
+  .modal-btn.confirm{ background:linear-gradient(135deg,var(--accent-pink),#c21e6c); color:#fff; }
+
+  /* ===== BINGO SCREEN ===== */
+  .status-row{ display:flex; gap:10px; width:100%; margin-bottom:14px; }
+  .status-box{ flex:1; background:var(--bg-panel); border:1px solid var(--line); border-radius:12px; padding:10px 12px; }
+  .status-box .label{ font-size:11px; color:var(--text-dim); letter-spacing:0.05em; }
+  .status-box .value{ font-size:20px; font-weight:800; font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+  .status-box.reach .value{ color:var(--accent-gold); }
+  .status-box.bingo .value{ color:var(--accent-pink); }
+  .status-nums{ width:100%; font-size:13px; color:var(--text-dim); margin-bottom:4px; min-height:18px; }
+  .status-nums b{ color:var(--text-light); font-weight:700; }
+
+  .bingo-wrap{ width:100%; margin:10px 0 8px; }
+  .board-grid{
+    display:grid;
+    grid-template-columns: 28px repeat(5, 1fr);
+    grid-template-rows: 26px repeat(5, 1fr);
+    gap:5px;
+    width:100%;
+  }
+  .corner{ }
+  .col-label, .row-label{
+    display:flex; align-items:center; justify-content:center;
+    font-size:13px; color:var(--accent-cyan); font-weight:700;
+  }
+  .cell{
+    position:relative; aspect-ratio:1/1;
+    background:var(--bg-panel); border:1px solid var(--line); border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+    font-weight:800; font-size:clamp(13px,4.2vw,19px);
+    color:var(--text-light); cursor:pointer; user-select:none; -webkit-tap-highlight-color:transparent;
+    transition:transform .1s ease, background .15s ease, box-shadow .15s ease;
+  }
+  .cell:active{ transform:scale(0.94); }
+  .cell.open{
+    background:linear-gradient(145deg,var(--accent-cyan),#0f9c86);
+    color:#062420; border-color:var(--accent-cyan);
+    box-shadow:0 0 14px rgba(34,230,200,0.55);
+  }
+  .cell.free{
+    background:linear-gradient(145deg,var(--accent-gold),#c98f00);
+    color:#3a2600; border-color:var(--accent-gold);
+    box-shadow:0 0 14px rgba(255,204,77,0.55);
+    font-size:12px; font-weight:900;
+  }
+  .diag-legend{ display:flex; gap:14px; margin-top:10px; font-size:12px; color:var(--text-dim); justify-content:center; }
+  .diag-legend span b{ color:var(--accent-cyan); font-size:14px; margin-left:3px; }
+
+  .key-panel{ width:100%; margin-top:22px; background:var(--bg-panel); border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .key-panel label{ font-size:12px; color:var(--text-dim); letter-spacing:0.05em; }
+  .key-row{ display:flex; gap:8px; margin-top:8px; align-items:stretch; }
+  .key-row textarea{ margin-top:0; min-height:60px; flex:1; }
+  .copy-btn{
+    flex-shrink:0; padding:0 16px; border-radius:10px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent-cyan),#0f9c86); color:#06241f; font-weight:800; font-size:13px;
+  }
+  .copy-hint{ font-size:12px; color:var(--text-dim); margin-top:8px; display:none; }
+  .copy-hint.active{ display:block; }
+  .copy-success{ font-size:12px; color:var(--accent-cyan); margin-top:8px; display:none; font-weight:700; }
+  .copy-success.active{ display:block; }
+
+  .new-bingo-btn{ margin-top:20px; }
+
+  /* ===== お題ツール ===== */
+  .odai-panel{ width:100%; margin-top:24px; padding-top:20px; border-top:1px dashed var(--line); }
+  .odai-title{ font-size:13px; color:var(--text-dim); letter-spacing:0.08em; margin-bottom:10px; text-align:center; }
+  .odai-btn{
+    width:100%; padding:16px; font-size:16px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,var(--accent-gold),#c98f00); border:none; border-radius:14px;
+    cursor:pointer; -webkit-tap-highlight-color:transparent; box-shadow:0 8px 20px rgba(255,204,77,0.25);
+    transition:transform .12s ease;
+  }
+  .odai-btn:active{ transform:scale(0.97); }
+  .odai-result{
+    display:none; margin-top:14px; background:var(--bg-panel); border:1px solid var(--line);
+    border-radius:14px; padding:16px 18px;
+  }
+  .odai-result.active{ display:block; }
+  .odai-row{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; }
+  .odai-row + .odai-row{ border-top:1px solid var(--line); }
+  .odai-row .odai-label{ font-size:12px; color:var(--text-dim); letter-spacing:0.05em; }
+  .odai-row .odai-value{ font-size:16px; font-weight:800; color:var(--accent-gold); }
+
+  @media (prefers-reduced-motion: reduce){
+    .cell, .menu-btn, .mode-card{ transition:none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOP ============ -->
+<div class="screen active" id="screen-top">
+  <div class="logo-wrap">
+    <div class="logo-mic">🎤</div>
+    <h1 class="title">カラオケビンゴ</h1>
+    <div class="subtitle">SCORE BINGO</div>
+  </div>
+
+  <button class="menu-btn primary" id="btn-generate">ビンゴ生成</button>
+  <button class="menu-btn secondary" id="btn-load-toggle">ビンゴ読み込み</button>
+
+  <div class="load-panel" id="load-panel">
+    <label>ビンゴ情報キー</label>
+    <textarea id="load-textarea" rows="3" placeholder="コードを貼り付け"></textarea>
+    <div class="error-text" id="load-error">読み込みに失敗しました</div>
+    <button class="menu-btn secondary" style="margin-top:12px;" id="btn-load-exec">読み込む</button>
+  </div>
+</div>
+
+<!-- ============ MODE SELECT ============ -->
+<div class="screen" id="screen-mode">
+  <div class="logo-wrap" style="margin:20px 0 30px;">
+    <h1 class="title" style="font-size:26px;">モード選択</h1>
+  </div>
+
+  <div class="mode-card mode-normal" data-mode="normal">
+    <span class="mode-tag">NORMAL</span>
+    <h3>ノーマル</h3>
+    <p>90点前後を取れる人向け</p>
+  </div>
+  <div class="mode-card mode-hard" data-mode="hard">
+    <span class="mode-tag">HARD</span>
+    <h3>ハード</h3>
+    <p>90点以上を安定して取れる人向け</p>
+  </div>
+  <div class="mode-card mode-hardcore" data-mode="hardcore">
+    <span class="mode-tag">HARDCORE</span>
+    <h3>ハードコア</h3>
+    <p>95点以上を安定して取れる人向け</p>
+  </div>
+
+  <button class="back-link" id="mode-back">&larr; TOPへ戻る</button>
+</div>
+
+<!-- ============ BINGO SCREEN ============ -->
+<div class="screen" id="screen-bingo">
+  <div class="logo-wrap" style="margin:10px 0 18px;">
+    <h1 class="title" style="font-size:22px;">🎤 カラオケビンゴ</h1>
+  </div>
+
+  <div class="status-row">
+    <div class="status-box reach">
+      <div class="label">リーチ数</div>
+      <div class="value" id="reach-count">0</div>
+    </div>
+    <div class="status-box bingo">
+      <div class="label">ビンゴ数</div>
+      <div class="value" id="bingo-count">0</div>
+    </div>
+  </div>
+  <div class="status-nums" id="reach-nums">リーチ番号：なし</div>
+  <div class="status-nums" id="bingo-nums">ビンゴ番号：なし</div>
+
+  <div class="bingo-wrap">
+    <div class="board-grid" id="board-grid"></div>
+    <div class="diag-legend" id="diag-legend"></div>
+  </div>
+
+  <div class="odai-panel">
+    <div class="odai-title">🎯 お題ツール(縛り)</div>
+    <button class="odai-btn" id="odai-btn">お題作成</button>
+    <div class="odai-result" id="odai-result">
+      <div class="odai-row"><span class="odai-label">ボーカル</span><span class="odai-value" id="odai-vocal"></span></div>
+      <div class="odai-row"><span class="odai-label">テンポ</span><span class="odai-value" id="odai-tempo"></span></div>
+      <div class="odai-row"><span class="odai-label">オプション（縛り度UP）</span><span class="odai-value" id="odai-option"></span></div>
+    </div>
+  </div>
+
+  <div class="key-panel">
+    <label>ビンゴ情報キー（保存・共有用コード）</label>
+    <div class="key-row">
+      <textarea id="key-textarea" rows="2" readonly></textarea>
+      <button class="copy-btn" id="copy-btn">コピー</button>
+    </div>
+    <div class="copy-hint" id="copy-hint">コピーできない環境のようです。上のテキストが選択されたので、そのまま長押しでコピーしてください。</div>
+    <div class="copy-success" id="copy-success">コピーしました</div>
+  </div>
+
+  <button class="menu-btn secondary new-bingo-btn" id="btn-new">TOPへ戻る</button>
+</div>
+
+<!-- ============ MODAL ============ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal-box">
+    <h4 id="modal-title"></h4>
+    <p id="modal-desc"></p>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" id="modal-cancel">キャンセル</button>
+      <button class="modal-btn confirm" id="modal-confirm">生成</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------- 定数 ---------- */
+  var CIRCLED = ['①','②','③','④','⑤','⑥','⑦','⑧','⑨','⑩','⑪','⑫'];
+
+  // 12ライン: 行0-4, 列0-4, 斜め2本（この順序を固定し、キー保存時のlabels配列と対応させる）
+  var LINES = (function(){
+    var lines = [];
+    for (var r=0;r<5;r++){ var row=[]; for(var c=0;c<5;c++){ row.push(r*5+c); } lines.push(row); }
+    for (var c2=0;c2<5;c2++){ var col=[]; for(var r2=0;r2<5;r2++){ col.push(r2*5+c2); } lines.push(col); }
+    lines.push([0,6,12,18,24]);
+    lines.push([4,8,12,16,20]);
+    return lines;
+  })();
+
+  var MODE_INFO = {
+    normal:   { title:'ノーマル', desc:'・90点前後を取れる人向け\n・86～94+を、90点前後を多めにランダム配置します' },
+    hard:     { title:'ハード', desc:'・90点以上を安定して取れる人向け\n・90、91、92、93、94、95+を4個ずつランダム配置します' },
+    hardcore: { title:'ハードコア', desc:'・95点以上を安定して取れる人向け\n・90～99+を、95点前後を多めにランダム配置します\n・95+、96+、97+、98+、99+から4個選び追加でランダム配置します' }
+  };
+
+  var ODAI_VOCAL = ['男声ボーカル','女声ボーカル'];
+  var ODAI_TEMPO = ['バラード','ミディアム','アップ'];
+  var ODAI_OPTION = [
+    '恋愛ソング','アニメ、ゲーム、ネット、ボーカロイド','アイドル','2人組以上','ソロ',
+    '春夏の曲','秋冬の曲','80年代以前','90年代','00年代','10年代','20年代'
+  ];
+
+  /* ---------- 状態 ---------- */
+  var state = { board:null, labels:null, opened:null };
+  var pendingMode = null;
+
+  /* ---------- ユーティリティ ---------- */
+  function shuffle(arr){
+    for (var i=arr.length-1;i>0;i--){
+      var j = Math.floor(Math.random()*(i+1));
+      var t = arr[i]; arr[i]=arr[j]; arr[j]=t;
+    }
+    return arr;
+  }
+
+  function buildScorePool(mode){
+    var pool = [];
+    function add(val,count){ for(var i=0;i<count;i++) pool.push(val); }
+    if (mode==='normal'){
+      add(86,1); add(87,2); add(88,3); add(89,4); add(90,4); add(91,4); add(92,3); add(93,2); add('94+',1);
+    } else if (mode==='hard'){
+      add(90,4); add(91,4); add(92,4); add(93,4); add(94,4); add('95+',4);
+    } else if (mode==='hardcore'){
+      add(90,1); add(91,1); add(92,2); add(93,3); add(94,3); add(95,3); add(96,3); add(97,2); add(98,1); add('99+',1);
+      var extras = shuffle(['95+','96+','97+','98+','99+']).slice(0,4);
+      extras.forEach(function(v){ add(v,1); });
+    }
+    return pool; // length 24
+  }
+
+  function generateBoard(mode){
+    var pool = shuffle(buildScorePool(mode));
+    var board = new Array(25).fill(null);
+    board[12] = 'FREE';
+    var idx = 0;
+    for (var i=0;i<25;i++){
+      if (i===12) continue;
+      board[i] = pool[idx++];
+    }
+    var labels = shuffle(CIRCLED.slice());
+    return { board:board, labels:labels };
+  }
+
+  function freshOpened(){
+    var o = new Array(25).fill(false);
+    o[12] = true;
+    return o;
+  }
+
+  /* ---------- キー エンコード/デコード ---------- */
+  function encodeKey(){
+    var payload = { b: state.board, l: state.labels };
+    var json = JSON.stringify(payload);
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+
+  function decodeKey(str){
+    var json = decodeURIComponent(escape(atob(str)));
+    var payload = JSON.parse(json);
+    if (!payload || !Array.isArray(payload.b) || payload.b.length!==25 ||
+        !Array.isArray(payload.l) || payload.l.length!==12){
+      throw new Error('invalid payload');
+    }
+    return payload;
+  }
+
+  /* ---------- 画面遷移 ---------- */
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(function(el){ el.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+  }
+
+  /* ---------- ボード描画 ---------- */
+  function renderBoard(){
+    var grid = document.getElementById('board-grid');
+    grid.innerHTML = '';
+
+    // コーナー(空白)
+    var corner = document.createElement('div');
+    corner.className = 'corner';
+    grid.appendChild(corner);
+
+    // 列ラベル (labels index 5-9 が列0-4)
+    for (var c=0;c<5;c++){
+      var cl = document.createElement('div');
+      cl.className = 'col-label';
+      cl.textContent = state.labels[5+c];
+      grid.appendChild(cl);
+    }
+
+    for (var r=0;r<5;r++){
+      // 行ラベル (labels index 0-4 が行0-4)
+      var rl = document.createElement('div');
+      rl.className = 'row-label';
+      rl.textContent = state.labels[r];
+      grid.appendChild(rl);
+
+      for (var c2=0;c2<5;c2++){
+        var i = r*5+c2;
+        var cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.idx = i;
+        if (i===12){
+          cell.classList.add('free');
+          cell.textContent = 'FREE';
+        } else {
+          cell.textContent = state.board[i];
+          if (state.opened[i]) cell.classList.add('open');
+          cell.addEventListener('click', onCellTap);
+        }
+        grid.appendChild(cell);
+      }
+    }
+
+    // 斜めラベル (labels index 10, 11)
+    var diagWrap = document.getElementById('diag-legend');
+    diagWrap.innerHTML =
+      '<span>↘ 斜め<b>' + state.labels[10] + '</b></span>' +
+      '<span>↙ 斜め<b>' + state.labels[11] + '</b></span>';
+  }
+
+  function onCellTap(e){
+    var i = parseInt(e.currentTarget.dataset.idx, 10);
+    state.opened[i] = !state.opened[i];
+    e.currentTarget.classList.toggle('open');
+    updateStatus();
+  }
+
+  function updateStatus(){
+    var reach = [], bingo = [];
+    LINES.forEach(function(line, idx){
+      var openCount = line.filter(function(i){ return state.opened[i]; }).length;
+      if (openCount===5) bingo.push(state.labels[idx]);
+      else if (openCount===4) reach.push(state.labels[idx]);
+    });
+    function sortLabels(arr){
+      return arr.slice().sort(function(a,b){ return CIRCLED.indexOf(a)-CIRCLED.indexOf(b); });
+    }
+    reach = sortLabels(reach);
+    bingo = sortLabels(bingo);
+
+    document.getElementById('reach-count').textContent = reach.length;
+    document.getElementById('bingo-count').textContent = bingo.length;
+    document.getElementById('reach-nums').textContent = 'リーチ番号：' + (reach.length ? reach.join('、') : 'なし');
+    document.getElementById('bingo-nums').textContent = 'ビンゴ番号：' + (bingo.length ? bingo.join('、') : 'なし');
+  }
+
+  function renderKey(){
+    document.getElementById('key-textarea').value = encodeKey();
+    document.getElementById('copy-hint').classList.remove('active');
+    document.getElementById('copy-success').classList.remove('active');
+  }
+
+  function openBingoScreen(){
+    renderBoard();
+    updateStatus();
+    renderKey();
+    document.getElementById('odai-result').classList.remove('active');
+    showScreen('screen-bingo');
+  }
+
+  /* ---------- TOP: 生成ボタン ---------- */
+  document.getElementById('btn-generate').addEventListener('click', function(){
+    showScreen('screen-mode');
+  });
+  document.getElementById('mode-back').addEventListener('click', function(){
+    showScreen('screen-top');
+  });
+
+  /* ---------- TOP: 読み込みパネル ---------- */
+  var loadPanel = document.getElementById('load-panel');
+  document.getElementById('btn-load-toggle').addEventListener('click', function(){
+    loadPanel.classList.toggle('active');
+  });
+  document.getElementById('btn-load-exec').addEventListener('click', function(){
+    var raw = document.getElementById('load-textarea').value.trim();
+    var errEl = document.getElementById('load-error');
+    if (!raw){
+      errEl.classList.add('active');
+      return;
+    }
+    try{
+      var payload = decodeKey(raw);
+      state.board = payload.b;
+      state.labels = payload.l;
+      state.opened = freshOpened();
+      errEl.classList.remove('active');
+      document.getElementById('load-textarea').value = '';
+      loadPanel.classList.remove('active');
+      openBingoScreen();
+    } catch(err){
+      errEl.classList.add('active');
+    }
+  });
+
+  /* ---------- モード選択 -> モーダル ---------- */
+  document.querySelectorAll('.mode-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      pendingMode = card.dataset.mode;
+      var info = MODE_INFO[pendingMode];
+      document.getElementById('modal-title').textContent = info.title;
+      document.getElementById('modal-desc').textContent = info.desc;
+      document.getElementById('modal-overlay').classList.add('active');
+    });
+  });
+  document.getElementById('modal-cancel').addEventListener('click', function(){
+    document.getElementById('modal-overlay').classList.remove('active');
+    pendingMode = null;
+  });
+  document.getElementById('modal-confirm').addEventListener('click', function(){
+    if (!pendingMode) return;
+    var result = generateBoard(pendingMode);
+    state.board = result.board;
+    state.labels = result.labels;
+    state.opened = freshOpened();
+    document.getElementById('modal-overlay').classList.remove('active');
+    pendingMode = null;
+    openBingoScreen();
+  });
+
+  /* ---------- コピー ---------- */
+  document.getElementById('copy-btn').addEventListener('click', function(){
+    var ta = document.getElementById('key-textarea');
+    var hint = document.getElementById('copy-hint');
+    var success = document.getElementById('copy-success');
+    var text = ta.value;
+
+    function fallback(){
+      ta.focus();
+      ta.select();
+      ta.setSelectionRange(0, text.length);
+      hint.classList.add('active');
+      success.classList.remove('active');
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(function(){
+        hint.classList.remove('active');
+        success.classList.add('active');
+        setTimeout(function(){ success.classList.remove('active'); }, 2000);
+      }).catch(fallback);
+    } else {
+      fallback();
+    }
+  });
+
+  /* ---------- お題ツール ---------- */
+  function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  document.getElementById('odai-btn').addEventListener('click', function(){
+    document.getElementById('odai-vocal').textContent = pickRandom(ODAI_VOCAL);
+    document.getElementById('odai-tempo').textContent = pickRandom(ODAI_TEMPO);
+    document.getElementById('odai-option').textContent = pickRandom(ODAI_OPTION);
+    document.getElementById('odai-result').classList.add('active');
+  });
+
+  /* ---------- TOPへ戻る（ビンゴ画面から） ---------- */
+  document.getElementById('btn-new').addEventListener('click', function(){
+    showScreen('screen-top');
+  });
+
+})();
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('service-worker.js').catch(function(){ /* ローカル実行時などは無視 */ });
+  });
+}
+</script>
+</body>
+</html>
