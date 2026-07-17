@@ -139,12 +139,12 @@
   .bingo-wrap{ width:100%; margin:10px 0 8px; }
   .board-grid{
     display:grid;
-    grid-template-columns: 28px repeat(5, 1fr);
+    grid-template-columns: 28px repeat(5, 1fr) 28px;
     grid-template-rows: 26px repeat(5, 1fr);
     gap:5px;
     width:100%;
   }
-  .corner{ }
+  .corner, .spacer{ }
   .col-label, .row-label{
     display:flex; align-items:center; justify-content:center;
     font-size:13px; color:var(--accent-cyan); font-weight:700;
@@ -436,6 +436,11 @@
       grid.appendChild(cl);
     }
 
+    // 右端スペーサー(コーナー行) … マス目自体を中央揃えにするための余白
+    var cornerSpacer = document.createElement('div');
+    cornerSpacer.className = 'spacer';
+    grid.appendChild(cornerSpacer);
+
     for (var r=0;r<5;r++){
       // 行ラベル (labels index 0-4 が行0-4)
       var rl = document.createElement('div');
@@ -458,6 +463,11 @@
         }
         grid.appendChild(cell);
       }
+
+      // 右端スペーサー(各データ行)
+      var rowSpacer = document.createElement('div');
+      rowSpacer.className = 'spacer';
+      grid.appendChild(rowSpacer);
     }
 
     // 斜めラベル (labels index 10, 11)
