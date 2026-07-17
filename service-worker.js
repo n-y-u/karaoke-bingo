@@ -1,5 +1,5 @@
 // カラオケビンゴ - オフラインキャッシュ用 Service Worker
-const CACHE_NAME = 'karaoke-bingo-v1';
+const CACHE_NAME = 'karaoke-bingo-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -31,18 +31,18 @@ self.addEventListener('activate', function(event){
   );
 });
 
-// キャッシュ優先、なければネットワーク取得（オフラインでも起動できるように）
+// ネットワーク優先：オンライン時は常に最新を取得してキャッシュを更新。
+// オフライン時のみ、保存済みキャッシュにフォールバックする。
 self.addEventListener('fetch', function(event){
   if (event.request.method !== 'GET') return;
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      if (cached) return cached;
-      return fetch(event.request).then(function(response){
-        var copy = response.clone();
-        caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
-        return response;
-      }).catch(function(){
-        return caches.match('./index.html');
+    fetch(event.request).then(function(response){
+      var copy = response.clone();
+      caches.open(CACHE_NAME).then(function(cache){ cache.put(event.request, copy); });
+      return response;
+    }).catch(function(){
+      return caches.match(event.request).then(function(cached){
+        return cached || caches.match('./index.html');
       });
     })
   );
